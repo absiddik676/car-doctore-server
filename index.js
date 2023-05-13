@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const app = express();
 const port = process.env.PORT || 5000;
@@ -26,6 +26,49 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
+
+    const servicesCollocation = client.db('car-doctor').collection('services')
+    const bookingCollocation = client.db('car-doctor').collection('booking')
+
+    app.get('/services', async(req,res)=>{
+      const cursor = servicesCollocation.find();
+      const result = await cursor.toArray()
+      res.send(result)
+    })
+
+    app.get('/service/:id', async(req,res)=>{
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const options = {
+        projection: {  title: 1, price: 1, service_id:1, img:1 },
+      };
+      const service = await servicesCollocation.findOne(query,options);
+      res.send(service)
+    })
+
+    // booking
+
+    app.get('/booking',async(req,res)=>{
+      console.log(req.query.email);
+      let query = {}
+      if(req.query?.email){
+        query={email:req.query?.email}
+      }
+      const result = await bookingCollocation.find(query).toArray()
+      res.send(result)
+    })
+
+    app.post('/booking',async(req,res) => {
+      const booking = req.body;
+      console.log(booking);
+      const result = await bookingCollocation.insertOne(booking);
+      res.send(result)
+    })
+
+
+
+
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
